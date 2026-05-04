@@ -1,47 +1,39 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
-  private idCounter: number = 1;
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(createUserDto: CreateUserDto) {
-    const newUser: User = {
-      id: this.idCounter++,
-      ...createUserDto,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-    this.users.push(newUser)
-    return newUser;
+  async create(createUserDto: CreateUserDto) {
+    return this.prisma.user.create({
+      data: createUserDto,
+    });
   }
 
-  findAll() {
-    return this.users;
+  async findAll() {
+    return this.prisma.user.findMany();
   }
 
-  findOne(id: number) {
-    const user = this.users.find(u => u.id === id);
-    if (!user) throw new NotFoundException(`User ${id} not found.`)
+  async findOne(id: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException(`User ${id} not found.`);
     return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    const user = this.findOne(id);
-
-    Object.assign(user, updateUserDto);
-    user.updatedAt = new Date();
-
-    return user;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    await this.findOne(id);
+    return this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+    });
   }
 
-  remove(id: number) {
-    this.findOne(id);
-    
-    this.users = this.users.filter(u => u.id !== id);
+  async remove(id: number) {
+    await this.findOne(id);
+    await this.prisma.user.delete({ where: { id } });
     return `User ${id} deleted.`;
   }
 }
