@@ -12,6 +12,8 @@ export class ContactsService {
     return this.prisma.contact.create({
       data: {
         ...createContactDto,
+        email: createContactDto.email ?? '',
+        phone: createContactDto.phone ?? '',
         userId,
       },
     });
